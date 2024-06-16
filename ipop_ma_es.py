@@ -173,7 +173,8 @@ def ipop_maes(fun, lbounds, ubounds, budget):
         if optimizer.should_stop():
             # popsize multiplied by 2 before each restart.
             popsize = optimizer.population_size * 2
-            mean = lower_bounds + (np.random.rand(2) * (upper_bounds - lower_bounds))
+            mean = lower_bounds + (np.random.rand(len(lower_bounds)) * (upper_bounds - lower_bounds))
+            sigma = (upper_bounds.mean() - lower_bounds.mean()) / 5  # 1/5 of the domain width
             optimizer = IPOPMAES(
                 mean=mean, sigma=sigma, population_size=popsize, lower_bound=lower_bounds, upper_bound=upper_bounds
             )

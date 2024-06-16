@@ -23,12 +23,12 @@ def cmaes(fun, lbounds, ubounds, budget):
             budget -= 1
         optimizer.tell(solutions)
 
-        if optimizer.should_stop():
-            # popsize multiplied by 2 before each restart.
-            popsize = optimizer.population_size * 2
-            mean = lower_bounds + (np.random.rand(2) * (upper_bounds - lower_bounds))
-            sigma = (upper_bounds.mean() - lower_bounds.mean()) / 5
-            optimizer = CMA(mean=mean, sigma=sigma, population_size=popsize, bounds=bounds)
+        # if optimizer.should_stop():
+        #     # popsize multiplied by 2 before each restart.
+        #     popsize = optimizer.population_size * 2
+        #     mean = lower_bounds + (np.random.rand(len(lower_bounds)) * (upper_bounds - lower_bounds))
+        #     sigma = (upper_bounds.mean() - lower_bounds.mean()) / 5  # 1/5 of the domain width
+        #     optimizer = CMA(mean=mean, sigma=sigma, population_size=popsize, bounds=bounds)
     dir = f"results/{fun.id.split('_')[1]}/{fun.id.split('_')[3]}"
     if not os.path.exists(dir):
         os.makedirs(dir)
