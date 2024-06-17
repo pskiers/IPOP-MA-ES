@@ -1,40 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""A short and simple example experiment with restarts.
-
-The script is fully functional but also emphasises on readability. It
-features restarts, timings and recording termination conditions.
-
-To benchmark a different solver, `fmin` must be re-assigned and another
-`elif` block added around line 119 to account for the solver-specific
-call.
-
-When calling the script, previously assigned variables can be re-assigned
-via a ``name=value`` argument without white spaces, where ``value`` is
-interpreted as a single python literal. Additionally, ``batch`` is recognized
-as argument defining the `current_batch` number and the number of `batches`,
-like ``batch=2/8`` runs batch 2 of 8.
-
-Examples, preceeded by "python" in an OS shell and by "run" in an IPython
-shell::
-
-    example_experiment2.py budget_multiplier=3  # times dimension
-
-    example_experiment2.py budget_multiplier=1e4 cocopp=None  # omit post-processing
-    
-    example_experiment2.py budget_multiplier=1e4 suite_name=bbob-biobj
-
-    example_experiment2.py budget_multiplier=1000 batch=1/16
-
-Post-processing with `cocopp` is only invoked in the single-batch case.
-
-Details: ``batch=9/8`` is equivalent to ``batch=1/8``. The first number
-is taken modulo to the second.
-
-See the code: `<https://github.com/numbbo/coco/blob/master/code-experiments/build/python/example_experiment2.py>`_
-
-See a beginners example experiment: `<https://github.com/numbbo/coco/blob/master/code-experiments/build/python/example_experiment_for_beginners.py>`_
-
+"""
+Script from the original coco repo - https://github.com/numbbo/coco/blob/master/code-experiments/build/python/example_experiment2.py
 """
 from __future__ import division, print_function, unicode_literals
 __author__ = "Nikolaus Hansen and ..."
@@ -78,13 +45,12 @@ def random_search(f, lbounds, ubounds, evals):
                                * np.random.rand(int(evals), len(ubounds))]
 
 ### input (to be modified if necessary/desired)
-from ipop_ma_es import ipop_maes
 from coco_cmaes import cmaes
 fmin = cmaes
 
 suite_name = "bbob"  # see cocoex.known_suite_names
-budget_multiplier = 100  # times dimension, increase to 10, 100, ...
-suite_filter_options = ("function_indices: 15, 16, 20, 23, dimensions: 5, 10, 20"  # without filtering, a suite has instance_indices 1-15
+budget_multiplier = 4000  # times dimension, increase to 10, 100, ...
+suite_filter_options = ("function_indices: 15, 16, 20, 23, dimensions: 5, 10, 20, instance_indices:1-1"  # without filtering, a suite has instance_indices 1-15
                         # "dimensions: 2,3,5,10,20 "  # skip dimension 40
                         # "instance_indices: 1-5 "  # relative to suite instances
                        )
@@ -132,23 +98,16 @@ for batch_counter, problem in enumerate(suite):  # this loop may take hours or d
     problem.observe_with(observer)  # generate the data for cocopp post-processing
     problem(np.zeros(problem.dimension))  # making algorithms more comparable
     propose_x0 = problem.initial_solution_proposal  # callable, all zeros in first call
-    evalsleft = lambda: int(problem.dimension * budget_multiplier + 1 -
-                            max((problem.evaluations, problem.evaluations_constraints)))
+    evalsleft = lambda: int(problem.dimension * budget_multiplier + 1)
     time1 = time.time()
     # apply restarts
-    irestart = -1
-    while evalsleft() > 0 and not problem.final_target_hit:
-        irestart += 1
 
-        # here we assume that `fmin` evaluates the final/returned solution
-        if 11 < 3:  # add solver to investigate here
-            pass
-        elif fmin in (ipop_maes, cmaes):
-            fmin(problem, problem.lower_bounds, problem.upper_bounds, evalsleft())
+    for seed in range(25):
+        fmin(problem, problem.lower_bounds, problem.upper_bounds, evalsleft(), seed=seed)
 
     timings[problem.dimension].append((time.time() - time1) / problem.evaluations
                                       if problem.evaluations else 0)
-    minimal_print(problem, restarted=irestart, final=problem.index == len(suite) - 1)
+    minimal_print(problem, restarted=0, final=problem.index == len(suite) - 1)
     with open(output_folder + '_stopping_conditions.pydict', 'wt') as file_:
         file_.write("# code to read in these data:\n"
                     "# import ast\n"
