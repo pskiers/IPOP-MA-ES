@@ -21,7 +21,9 @@ class IPOPMAES:
         cs=None,
         cw=None,
         dsimga=None,
+        seed=42,
     ) -> None:
+        self.rng = np.random.RandomState(seed)
         self.upper_bound = upper_bound
         self.lower_bound = lower_bound
 
@@ -70,7 +72,7 @@ class IPOPMAES:
 
     def ask(self):
         while True:
-            z = np.random.randn(self.dim)
+            z = self.rng.randn(self.dim)
             d = self.M @ z
             x = self.y + self.sigma * d
             if np.all(x >= self.lower_bound) and np.all(x <= self.upper_bound):
@@ -152,12 +154,12 @@ class IPOPMAES:
         return False
 
 
-def ipop_maes(fun, lbounds, ubounds, budget):
+def ipop_maes(fun, lbounds, ubounds, budget, seed=42):
     lower_bounds, upper_bounds = np.array(lbounds), np.array(ubounds)
 
     mean = lower_bounds + (np.random.rand(len(lower_bounds)) * (upper_bounds - lower_bounds))
     sigma = (upper_bounds.mean() - lower_bounds.mean()) / 5  # 1/5 of the domain width
-    optimizer = IPOPMAES(mean=mean, sigma=sigma, lower_bound=lower_bounds, upper_bound=upper_bounds)
+    optimizer = IPOPMAES(mean=mean, sigma=sigma, lower_bound=lower_bounds, upper_bound=upper_bounds, seed=seed)
 
     points = []
     while budget > 0:
@@ -176,12 +178,17 @@ def ipop_maes(fun, lbounds, ubounds, budget):
             mean = lower_bounds + (np.random.rand(len(lower_bounds)) * (upper_bounds - lower_bounds))
             sigma = (upper_bounds.mean() - lower_bounds.mean()) / 5  # 1/5 of the domain width
             optimizer = IPOPMAES(
-                mean=mean, sigma=sigma, population_size=popsize, lower_bound=lower_bounds, upper_bound=upper_bounds
+                mean=mean,
+                sigma=sigma,
+                population_size=popsize,
+                lower_bound=lower_bounds,
+                upper_bound=upper_bounds,
+                seed=seed + popsize,  # so that we don't start with the same generations
             )
     dir = f"results/{fun.id.split('_')[1]}/{fun.id.split('_')[3]}"
     if not os.path.exists(dir):
         os.makedirs(dir)
-    csv_file = f"{dir}/IPOP_MA-ES_{fun.id.split('_')[2]}"
+    csv_file = f"{dir}/IPOP_MA-ES_seed={seed}"
     with open(csv_file, mode="w", newline="") as file:
         writer = csv.writer(file)
         header = [f"x_{i}" for i in range(len(points[0][0]))] + ["value"]
